@@ -1,0 +1,62 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS CloudFormation Script for launching an EC2 instance with custom root volume. Written by vipink1203
+Parameters:
+  EnvironmentTag:
+    Description: Target Environment  dev or qa or prod 
+    Type: String
+    Default: dev
+    AllowedValues:
+    - dev
+    - qa
+    - prod
+    ConstraintDescription: It should be either dev or qa or prod  
+  AmiId:
+    Type: AWS::EC2::Image::Id
+    Description: Name of an existing Amazon EC2 image ID, such as ami-0123456789abcdef. Default is Amazon Linux 2 ID.
+    Default: ami-0b69ea66ff7391e80
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    ConstraintDescription: must be the name of an existing EC2 KeyPair
+  Ec2RootVolumeSize:
+    Description: Ec2 root volume size
+    Type: String
+    Default: 30
+
+Mappings:
+  Environment:
+    dev:
+      InstanceType: t2.micro
+      SecurityGroup:
+      - sg-086196f2da46def1e
+    qa:
+      InstanceType: t2.micro
+      SecurityGroup:
+      - sg-086196f2da46def1e
+    prod:
+      InstanceType: t2.micro
+      SecurityGroup:
+      - sg-086196f2da46def1e
+    
+Resources: 
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !FindInMap [Environment, !Ref 'EnvironmentTag', InstanceType]
+      ImageId: !Ref 'AmiId'
+      SecurityGroupIds: !FindInMap [Environment, !Ref 'EnvironmentTag', SecurityGroup]
+      KeyName: !Ref 'KeyName'
+      BlockDeviceMappings:
+      - DeviceName: /dev/xvda
+        Ebs:
+          DeleteOnTermination: true
+          VolumeSize: !Ref 'Ec2RootVolumeSize'
+          VolumeType: standard
+      Tags:
+        - Key: Group
+          Value: SomeTeamName
+        - Key: AppName
+          Value: SomeApp
+        - Key: Env
+          Value: !Ref 'EnvironmentTag'
